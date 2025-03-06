@@ -1,0 +1,41 @@
+name: First Scraper
+
+# when will this action be triggered
+on:
+  workflow_dispatch: # dropdown menu for manual runs
+  schedule:
+  - cron: "0 0 * * *" # schedule a time (github in UTC)
+
+jobs:
+  scrape:
+    name: Scrape
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout # tells the computer to use your repo code
+      - uses: actions/checkout@v4 
+      # preexisting action we can include to get the code (like a python lib)
+
+      - name: Install Python # second step we want computer to do
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # This is where I could run my own script, install the other packages you'd need
+      # e.g. python script.py
+      - name: Install scraper
+        run: pip install warn-scraper # big local news pkg for layoff notices
+
+      # big local news is set up to run in command line
+      - name: Scrape
+        run: warn-scraper ia --data-dir ./data/ # scrapes iowa data, adds to data folder
+
+      # need to commit this information to save to our blank computer
+      - name: Commit and push
+        run: |
+          # the below is completely changeable
+          git config user.name "GitHub Actions"
+          git config user.email "actions@users.noreply.github.com"
+          git add ./data/
+          git commit -m "Latest data for Iowa" && git push || true
+          # push || true (a trick so run won't fail if there's nothing new)
+          
