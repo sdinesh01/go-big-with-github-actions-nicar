@@ -6,6 +6,9 @@ on:
   schedule:
   - cron: "0 0 * * *" # schedule a time (github in UTC)
 
+permissions:
+  contents: write
+
 jobs:
   scrape:
     name: Scrape
