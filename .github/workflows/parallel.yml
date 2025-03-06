@@ -1,0 +1,70 @@
+name: Matrix Scraper
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  scrape: # custom name for the job (like a function definition)
+    name: Scrape
+    runs-on: ubuntu-latest
+    continue-on-error: true #related to scrape. if true, the next job would run too
+    strategy: # here's where you set up the parallelization
+      fail-fast: false # stops the entire matrix when one scrape/step fails (this is related to the scrapes below)
+      matrix: 
+        state: [ca, ia, ny]   
+    steps:
+      - name: Hello world
+        run: echo "Scraping data for ${{ matrix.state }}"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install scraper
+        run: pip install warn-scraper
+
+      - name: Scrape
+        run: warn-scraper ${{ matrix.state }} --data-dir ./data/
+
+      - name: Upload Artifact # upload action is also a premade action by github (like checkout); saves data temporarily before commit
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.state }} # which artifact we're on
+          path: ./data/${{ matrix.state }}.csv # file path for the scrape
+
+  commit:
+    name: Commit
+    runs-on: ubuntu-latest
+    needs: scrape # references lowercase "function" name
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4 # we need to download the repo to be able to commit to it
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*' # parameters from download-artifact
+          path: artifacts/
+
+      - name: Move # here we're unpacking artifacts to csvs in the data folder
+        run: |  # the pipe is for multiline commands (the lines below are like the command line)
+          mkdir data -p
+          mv artifacts/**/*.csv data/
+
+      - name: Save datestamp
+        run: date > ./data/latest-scrape.txt
+
+      - name: Commit and push
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@users.noreply.github.com"
+          git add ./data/
+          git commit -m "Latest data" && git push || true
+        
