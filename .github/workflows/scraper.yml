@@ -3,9 +3,16 @@ name: First Scraper
 # when will this action be triggered
 on:
   workflow_dispatch: # dropdown menu for manual runs
+    inputs: # creates an input field in the manual run button
+      state: 
+        description: "U.S. state to scrape"
+        required: true 
+        # we can create options to specify the type of thing we want to scrape
+        default: 'la'
   schedule:
   - cron: "0 0 * * *" # schedule a time (github in UTC)
 
+# allows github to write to files
 permissions:
   contents: write
 
@@ -30,7 +37,11 @@ jobs:
 
       # big local news is set up to run in command line
       - name: Scrape
-        run: warn-scraper ia --data-dir ./data/ # scrapes iowa data, adds to data folder
+        run: warn-scraper ${{ inputs.state }} --data-dir ./data/ # scrapes iowa data, adds to data folder 
+        # ${{ ... }} syntax refers to the inputs set up in workflow dispatch
+
+      - name: Save datestamp # ensures that github does not stop running repo after a period of inactivity
+        run: date > ./data/latest-scrape.txt
 
       # need to commit this information to save to our blank computer
       - name: Commit and push
@@ -39,6 +50,6 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@users.noreply.github.com"
           git add ./data/
-          git commit -m "Latest data for Iowa" && git push || true
+          git commit -m "Latest data for ${{ inputs.state }}" && git push || true
           # push || true (a trick so run won't fail if there's nothing new)
           
