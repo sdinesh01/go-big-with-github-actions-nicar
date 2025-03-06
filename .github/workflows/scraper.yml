@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout # tells the computer to use your repo code
-      - uses: actions/checkout@v4 
+        uses: actions/checkout@v4 
       # preexisting action we can include to get the code (like a python lib)
 
       - name: Install Python # second step we want computer to do
